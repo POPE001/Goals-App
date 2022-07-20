@@ -1,109 +1,74 @@
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs')
-const asyncHandler = require('express-async-handler')
-const User = require('../models/userModel')
+const validationResult = require("express-validator").validationResult;
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const UserModel = require("../models/users");
 
-
-// @desc Register new user
-// @route POST /api/users
-// @access public
-
-const regiserUser = asyncHandler(async (req, res) => {
-
-    const {name, email,password} = req.body
-    if(!name || !email || !password) {
-        res.status(400);
-        throw new Error('Please add all fields')
-    }
-
-    //check if the user exists
-    const userExists = await User.findOne({email})
-    if(userExists) {
-        res.status(400);
-        throw new Error('User already exists')
-    }
-
-    //Hash Password
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(password, salt)
-
-    //Create User
-    const user = await User.create({
-        name,
-        email,
-        password: hashedPassword
-    } )
-
-    if(user) {
-        res.status(201).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            token: generateToken(user._id)
-        })
-
+class UserController {
+  static async registerUser(req, res) {
+    const { name, email, password } = req.body;
+    if (validationResult(req).isEmpty()) {
+      try {
+        //1- check if user exists
+        const userExits = await UserModel.checkEmail(email);
+        if (userExits) {
+          return res
+            .status(400)
+            .json({ msg: `User already exists, please Login` });
+        }
+        //2- hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        //3- create user
+        const userResponse = await UserModel.createUser(
+          name,
+          email,
+          hashedPassword
+        );
+        if (userResponse.insertedId && userResponse.acknowledged) {
+          // 201 status means Ok & something was created
+          res.status(201).json({
+            name: name,
+            token: UserController.generateToken(userResponse.insertedId),
+          });
+        }
+      } catch (err) {
+        console.log(err);
+        res.status(500).json({ msg: `Somthing went wrong, Please try again` });
+      }
     } else {
-        res.status(400)
-        throw new Error('Invalid User Data')
+      res.status(400).json(validationResult(req).array());
     }
+  }
 
-})
+  static async loginUser(req, res) {
+    const { email, password } = req.body;
 
-
-
-// @desc Login user
-// @route GET /api/users
-// @access public
-const loginUser = asyncHandler(async (req, res) => {
-    const {email, password} = req.body
-    if (!email || !password) {
-        res.status(400)
-        throw new Error('Please add all fields')
+    if (validationResult(req).isEmpty()) {
+      try {
+        //1- match email
+        const user = await UserModel.checkEmail(email);
+        if (!user) {
+          return res.status(400).json({ msg: `Email address is not correct` });
+        }
+        //2- match password
+        (await bcrypt.compare(password, user.password))
+          ? res.status(200).json({
+              name: user.name,
+              token: UserController.generateToken(user._id),
+            })
+          : res.status(400).json({ msg: `Password is not correct` });
+      } catch (err) {
+        console.log(err);
+        res.status(500).json({ msg: `Somthing went wrong, Please try again` });
+      }
+    } else {
+      res.status(400).json(validationResult(req).array());
     }
+  }
 
-    //Check for user email
-    const user = await User.findOne({email})
-
-    if(user && (await bcrypt.compare(password, user.password)) ) {
-
-        res.status(200).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            token: generateToken(user._id)
-
-        })
-    }
-
-    else{
-        res.status(400)
-        throw new Error('Invalid Credentials')
-    }
-    
-})
-
-
-
-// @desc Get user data
-// @route POST /api/users/me
-// @access private
-const getMe = asyncHandler(async (req, res) => {
-    const {_id, email, name} = await User.findById(req.user.id)
-
-    res.status(200).json({
-        id: _id,
-        name,
-        email,
-    })
-   
-})
-
-// Generate JWT
-const generateToken = (id) => {
-    return jwt.sign({id}, process.env.JWT_SECRET,  {
-        expiresIn: '30d'
-    })
+  static generateToken(id) {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  }
 }
 
-
-module.exports = {loginUser, regiserUser, getMe}
+module.exports = UserController;

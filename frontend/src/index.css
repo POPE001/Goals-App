@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
 
 * {
   margin: 0;
@@ -7,7 +7,7 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
   height: 100vh;
 }
 
@@ -52,6 +52,10 @@ h3 {
   margin-bottom: 60px;
 }
 
+.logo {
+  font-weight: 600;
+}
+
 .header ul {
   display: flex;
   align-items: center;
@@ -82,6 +86,12 @@ h3 {
   padding: 0 20px;
 }
 
+@media (max-width: 767px) {
+  .heading h4 {
+    font-size: 1.5rem;
+  }
+}
+
 .heading p {
   color: #828282;
 }
@@ -92,26 +102,49 @@ h3 {
   gap: 10px;
 }
 
+@media (max-width: 767px) {
+  .goals {
+    display: block;
+  }
+}
+
 .goal {
   background-color: #f4f4f4;
   margin: 10px 0;
   padding: 20px 0 10px;
-  position: relative;
 }
 
-.goal .close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
+@media (max-width: 767px) {
+  .goal h2 {
+    font-size: 20px;
+  }
+}
+.icon-box {
+  display: flex;
+  justify-content: center;
+}
+.icon-box .icon {
   cursor: pointer;
   border: none;
   background: none;
+  font-size: 20px;
+}
+
+.icon-box .icon:first-child {
+  margin-right: 20px;
 }
 
 .form,
 .content {
   width: 70%;
   margin: 0 auto;
+}
+
+@media (max-width: 767px) {
+  .form,
+  .content {
+    width: 90%;
+  }
 }
 
 .form-group {
@@ -212,4 +245,76 @@ h3 {
   .heading p {
     font-size: 1.5rem;
   }
+}
+
+.error {
+  background-color: red;
+}
+
+.signin-icon {
+  margin-right: 8px;
+  position: relative;
+  top: 5px;
+}
+
+.register-icon {
+  margin-right: 8px;
+}
+
+.popup-box {
+  position: fixed;
+  background: #00000050;
+  width: 100%;
+  height: 100vh;
+  top: 0;
+  left: 0;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 60%;
+  margin: 250px auto 0;
+  height: auto;
+  min-height: 30vh;
+  background: #fff;
+  border-radius: 10px;
+  border: 2px solid #000;
+  animation: popup 1s;
+}
+
+@keyframes popup {
+  from {
+    top: -300px;
+  }
+  to {
+    top: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .box {
+    width: 90%;
+  }
+}
+
+.close-icon {
+  cursor: pointer;
+  position: absolute;
+  right: -15px;
+  top: -15px;
+  background: #ededed;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  text-align: center;
+  border: 2px solid #000;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.box input {
+  font-weight: normal;
+  text-align: center;
 }

@@ -1,80 +1,84 @@
-const asyncHandler = require('express-async-handler')
-const Goal = require('../models/goalModel')
-const User = require('../models/userModel')
+const GoalsModel = require("../models/goals");
+const validationResult = require("express-validator").validationResult;
 
-// @desc Get Goals
-// @route GET /api/goals
-// @access Private
-const getGoals = asyncHandler(async (req, res) => {
-    const goals = await Goal.find({user: req.user.id})
-    
-    res.status(200).json({ message: goals})
+class GoalsController {
+  static async getGoals(req, res) {
+    try {
+      const getResponse = await GoalsModel.getUserGoals(req.userId);
+      res.status(200).json(getResponse);
+    } catch (err) {
+      console.log(err);
+      res
+        .status(500)
+        .json({ msg: `Something went wrong, Failed to display Goal` });
+    }
+  }
 
-})
-// @desc Set Goal
-// @route POST /api/goals
-// @access Private
-const setGoal = asyncHandler(async (req, res) => {
-    if(!req.body.text) {
-        res.status(400)
-        throw new Error('Please add a text field...')
+  static async setGoal(req, res) {
+    if (validationResult(req).isEmpty()) {
+      try {
+        const setResponse = await GoalsModel.setUserGoal(
+          req.body.goal,
+          req.userId
+        );
+        if (setResponse.insertedId && setResponse.acknowledged) {
+          res
+            .status(201)
+            .json({ _id: setResponse.insertedId, text: req.body.goal });
+        }
+      } catch (err) {
+        console.log(err);
+        res.status(500).json({
+          msg: `Something went wrong, Failed to add Goal`,
+        });
+      }
+    } else {
+      res.status(400).json(validationResult(req).array());
     }
-    const goal = await Goal.create({
-        text: req.body.text,
-        user: req.user.id,
-    })
-    res.status(201).json(goal)
+  }
 
-})
-// @desc Update Goal
-// @route PUT /api/goals/:id
-// @access Private
-const updateGoal = asyncHandler(async (req,res) => {
-    
-    const goal = await Goal.findById(req.params.id)
-    if(!goal) {
-        res.status(400)
-        throw new Error('Goal not found')
+  static async updateGoal(req, res) {
+    if (validationResult(req).isEmpty()) {
+      try {
+        const updateResponse = await GoalsModel.updateUserGoal(
+          req.params.id,
+          req.body.goal,
+          req.userId
+        );
+        if (updateResponse.matchedCount === 1) {
+          res.status(200).json({ msg: "Goal updated successfully" });
+        } else if (updateResponse.matchedCount === 0) {
+          res.status(400).json({ msg: "Goal was not found" });
+        }
+      } catch (e) {
+        console.log(e);
+        res.status(500).json({
+          msg: "Something went wrong, Failed to update Goal",
+        });
+      }
+    } else {
+      res.status(400).json(validationResult(req).array());
     }
-    const user = await User.findById(req.user.id)
-    //Check for user
-    if(!user) {
-        res.status(401)
-        throw new Error('User not found')
-    }
-    //Make sure the logged user matches the goal user 
-    if(goal.user.toString() !== user.id) {
-            res.status(401)
-            throw new Error('User not authorized')
-    }
-    const updatedGoal = await Goal.findByIdAndUpdate(req.params.id, req.body, {new:true})
-    res.status(200).json(updatedGoal)
-})
+  }
 
-// @desc Delete Goal
-// @route DELETE /api/goals/:id
-// @access Private
-const deleteGoal = asyncHandler(async(req, res) => {
-    const goal = await Goal.findById(req.params.id)
-    if(!goal) {
-        res.status(400)
-        throw new Error('Goal not found')
+  static async deleteGoal(req, res) {
+    try {
+      const deleteResponse = await GoalsModel.deleteUserGoal(
+        req.params.id,
+        req.userId
+      );
+      if (deleteResponse.deletedCount === 1) {
+        res.status(200).json({ id: req.params.id });
+      } else if (deleteResponse.deletedCount === 0) {
+        res.status(400).json({ msg: "Goal was not found" });
+      }
+    } catch (e) {
+      console.log(e);
+      res
+        .status(500)
+        .json({ msg: "Something went wrong, Failed to delete Goal" });
     }
+  }
+}
 
-    const user = await User.findById(req.user.id)
-    //Check for user
-    if(!user) {
-        res.status(401)
-        throw new Error('User not found')
-    }
-    //Make sure the logged user matches the goal user 
-    if(goal.user.toString() !== user.id) {
-            res.status(401)
-            throw new Error('User not authorized')
-    }
-
-    await goal.remove()
-    res.status(200).json({id: req.params.id})
-})
-
-module.exports = {getGoals, setGoal, updateGoal, deleteGoal}
+module.exports = GoalsController;
